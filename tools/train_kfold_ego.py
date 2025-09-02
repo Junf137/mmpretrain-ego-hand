@@ -19,7 +19,6 @@ from typing import Dict, List, Optional
 from mmengine.config import Config, ConfigDict
 from mmengine.runner import Runner
 from mmengine.utils import mkdir_or_exist
-from mmengine.logging import print_log
 
 
 def parse_args():
@@ -120,14 +119,14 @@ def save_fold_results(fold: int, work_dir: str, results: Dict) -> None:
 
 def train_fold(cfg: Config, fold: int, args) -> Dict:
     """Train a single fold and return results."""
-    print_log(f'=== Training Fold {fold} ===', 'INFO')
+    print(f'=== Training Fold {fold} ===')
 
     # Check if we should resume from a previous fold's best checkpoint
     if fold > 0:
         prev_fold_work_dir = osp.join(args.work_dir, f'fold_{fold-1}')
         best_prev_ckpt = find_best_checkpoint(prev_fold_work_dir)
         if best_prev_ckpt:
-            print_log(f'Loading best checkpoint from fold {fold-1}: {best_prev_ckpt}', 'INFO')
+            print(f'Loading best checkpoint from fold {fold-1}: {best_prev_ckpt}')
             cfg.load_from = best_prev_ckpt
 
     # Build and start training
@@ -158,10 +157,10 @@ def train_fold(cfg: Config, fold: int, args) -> Dict:
                         results['best_val_accuracy'] = max([item[1] for item in val_accs])
                         results['final_val_accuracy'] = val_accs[-1][1]
     except Exception as e:
-        print_log(f'Could not extract validation metrics: {e}', 'WARNING')
+        print(f'Warning: Could not extract validation metrics: {e}')
 
     save_fold_results(fold, args.work_dir, results)
-    print_log(f'=== Completed Fold {fold} ===', 'INFO')
+    print(f'=== Completed Fold {fold} ===')
 
     return results
 
@@ -196,11 +195,11 @@ def create_summary_report(all_results: List[Dict], work_dir: str) -> None:
     with open(summary_file, 'w') as f:
         json.dump(summary, f, indent=2)
 
-    print_log('=== Cross Validation Summary ===', 'INFO')
+    print('=== Cross Validation Summary ===')
     if val_accuracies:
-        print_log(f'Mean Validation Accuracy: {summary["summary_statistics"]["mean_val_accuracy"]:.4f} ± {summary["summary_statistics"]["std_val_accuracy"]:.4f}', 'INFO')
-        print_log(f'Individual Fold Accuracies: {val_accuracies}', 'INFO')
-    print_log(f'Summary saved to: {summary_file}', 'INFO')
+        print(f'Mean Validation Accuracy: {summary["summary_statistics"]["mean_val_accuracy"]:.4f} ± {summary["summary_statistics"]["std_val_accuracy"]:.4f}')
+        print(f'Individual Fold Accuracies: {val_accuracies}')
+    print(f'Summary saved to: {summary_file}')
 
 
 def commit_changes(message: str) -> None:
@@ -208,9 +207,9 @@ def commit_changes(message: str) -> None:
     try:
         subprocess.run(['git', 'add', '.'], check=True, cwd='.')
         subprocess.run(['git', 'commit', '-m', message], check=True, cwd='.')
-        print_log(f'Created git commit: {message}', 'INFO')
+        print(f'Created git commit: {message}')
     except subprocess.CalledProcessError as e:
-        print_log(f'Git commit failed: {e}', 'WARNING')
+        print(f'Warning: Git commit failed: {e}')
 
 
 def main():
@@ -218,7 +217,7 @@ def main():
 
     # Load base configuration
     cfg = Config.fromfile(args.config)
-    print_log(f'Loaded config from: {args.config}', 'INFO')
+    print(f'Loaded config from: {args.config}')
 
     # Create main work directory
     mkdir_or_exist(args.work_dir)
@@ -229,10 +228,10 @@ def main():
     # Determine which folds to train
     if args.fold is not None:
         folds_to_train = [args.fold]
-        print_log(f'Training single fold: {args.fold}', 'INFO')
+        print(f'Training single fold: {args.fold}')
     else:
         folds_to_train = list(range(args.resume_fold, 5))
-        print_log(f'Training folds: {folds_to_train}', 'INFO')
+        print(f'Training folds: {folds_to_train}')
 
     all_results = []
 
@@ -250,7 +249,7 @@ def main():
             commit_changes(f'feat: Complete training for fold {fold}')
 
         except Exception as e:
-            print_log(f'Error training fold {fold}: {e}', 'ERROR')
+            print(f'Error training fold {fold}: {e}')
             # Continue with next fold
             continue
 
@@ -259,7 +258,7 @@ def main():
         create_summary_report(all_results, args.work_dir)
         commit_changes('feat: Complete 5-fold cross validation with summary report')
 
-    print_log('=== 5-Fold Cross Validation Complete ===', 'INFO')
+    print('=== 5-Fold Cross Validation Complete ===')
 
 
 if __name__ == '__main__':
