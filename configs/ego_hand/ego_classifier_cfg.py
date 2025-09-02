@@ -122,16 +122,60 @@ train_cfg = dict(by_epoch=True, max_epochs=100, val_interval=1)
 val_cfg = dict()
 test_cfg = dict()
 
-# Runtime
+# Runtime settings with wandb integration and proper visualization
 default_scope = 'mmpretrain'
+
+# Configure default hooks with best checkpoint saving
 default_hooks = dict(
     timer=dict(type='IterTimerHook'),
-    logger=dict(type='LoggerHook', interval=100),
+    logger=dict(type='LoggerHook', interval=50),  # More frequent logging
     param_scheduler=dict(type='ParamSchedulerHook'),
-    checkpoint=dict(type='CheckpointHook', interval=1),
+    checkpoint=dict(
+        type='CheckpointHook',
+        interval=1,
+        max_keep_ckpts=3,  # Keep only 3 checkpoints to save disk space
+        save_best='auto',  # Automatically save best checkpoint based on validation metric
+        rule='greater'     # For accuracy, higher is better
+    ),
     sampler_seed=dict(type='DistSamplerSeedHook'),
-    visualization=dict(type='VisualizationHook', enable=False),
+    visualization=dict(
+        type='VisualizationHook',
+        enable=True,  # Enable visualization
+        interval=500,  # Visualize every 500 samples
+        show=False,    # Don't show images during training
+    ),
 )
+
+# Configure visualizer with wandb backend
+visualizer = dict(
+    type='UniversalVisualizer',
+    vis_backends=[
+        dict(type='LocalVisBackend'),
+        dict(
+            type='WandbVisBackend',
+            init_kwargs=dict(
+                project='ego-hand-classification',
+                name='ego_classifier_fold_{fold}',  # Will be formatted for each fold
+                group='5fold-cross-validation',
+                tags=['ego-hand', 'multimodal', 'hamer', 'resnet50'],
+                notes='Binary classification of ego-hand using ResNet50 + HAMER features'
+            )
+        )
+    ]
+)
+
+# Configure environment
+env_cfg = dict(
+    cudnn_benchmark=True,  # Enable for better performance with fixed input sizes
+    mp_cfg=dict(mp_start_method='fork', opencv_num_threads=0),
+    dist_cfg=dict(backend='nccl'),
+)
+
+# Set log level and other runtime settings
 log_level = 'INFO'
+log_processor = dict(window_size=20)  # Smooth logging over 20 iterations
 load_from = None
 resume = False
+
+# Set random seed for reproducibility
+randomness = dict(seed=42, deterministic=False)
