@@ -96,6 +96,10 @@ param_scheduler = dict(
     gamma=0.1,
 )
 
+# Evaluator for validation and testing
+val_evaluator = dict(type='Accuracy', topk=(1,))
+test_evaluator = val_evaluator
+
 # Train, valid, test setting
 train_cfg = dict(by_epoch=True, max_epochs=100, val_interval=1)
 val_cfg = dict()
