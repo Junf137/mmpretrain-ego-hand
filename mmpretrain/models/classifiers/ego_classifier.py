@@ -67,11 +67,13 @@ class EgoClassifier(ImageClassifier):
 
         # Pass through head if available
         if self.with_head:
+            # LinearClsHead expects a tuple of features
+            feats_tuple = (feats,)
             if mode == 'loss':
-                return self.head.loss(feats, data_samples)
+                return self.head.loss(feats_tuple, data_samples)
             elif mode == 'predict':
-                return self.head.predict(feats, data_samples)
+                return self.head.predict(feats_tuple, data_samples)
             else:  # mode == 'tensor'
-                return self.head(feats)
+                return self.head(feats_tuple)
 
         return feats
