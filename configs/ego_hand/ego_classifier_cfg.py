@@ -39,7 +39,7 @@ val_pipeline = [
 
 train_dataloader = dict(
     batch_size=32,
-    num_workers=4,
+    num_workers=8,
     dataset=dict(
         type=dataset_type,
         ann_file=data_root + 'train_0.json',
@@ -50,7 +50,7 @@ train_dataloader = dict(
 
 val_dataloader = dict(
     batch_size=32,
-    num_workers=4,
+    num_workers=8,
     dataset=dict(
         type=dataset_type,
         ann_file=data_root + 'valid_0.json',
