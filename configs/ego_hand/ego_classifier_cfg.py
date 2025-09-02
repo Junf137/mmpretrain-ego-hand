@@ -4,7 +4,7 @@
 #   - 'image_path': str (full path to image)
 #   - 'hamer_feats': list of floats (flattened normalized joints_2d (42), bbox (4), box_center/size (3) -> 49 floats)
 #   - 'label': int (0 for non-ego, 1 for ego)
-# - Similar for val.json and test.json.
+# - Similar for valid.json and test.json.
 # - Images are accessible at the paths in JSON.
 # - For simplicity, we omit detection_confidence and hand_type from inputs.
 # - Model: ResNet50 for image, MLP for hamer_feats, concat and linear classifier.
@@ -44,7 +44,7 @@ train_dataloader = dict(
     num_workers=4,
     dataset=dict(
         type=dataset_type,
-        ann_file=data_root + 'train.json',  # Your JSON file
+        ann_file=data_root + 'train_0.json',
         pipeline=train_pipeline,
     ),
     sampler=dict(type='DefaultSampler', shuffle=True),
@@ -55,13 +55,13 @@ val_dataloader = dict(
     num_workers=4,
     dataset=dict(
         type=dataset_type,
-        ann_file=data_root + 'val.json',
+        ann_file=data_root + 'valid_0.json',
         pipeline=val_pipeline,
     ),
     sampler=dict(type='DefaultSampler', shuffle=False),
 )
 
-test_dataloader = val_dataloader  # Same as val for simplicity
+test_dataloader = val_dataloader
 
 # Model config
 model = dict(
@@ -96,7 +96,7 @@ param_scheduler = dict(
     gamma=0.1,
 )
 
-# Train, val, test setting
+# Train, valid, test setting
 train_cfg = dict(by_epoch=True, max_epochs=100, val_interval=1)
 val_cfg = dict()
 test_cfg = dict()
