@@ -3,7 +3,6 @@ import json
 import torch
 from mmpretrain.datasets import BaseDataset
 from mmpretrain.registry import DATASETS
-from mmcv.transforms import LoadImageFromFile, PackInputs, RandomResizedCrop, RandomFlip, Normalize
 
 @DATASETS.register_module()
 class EgoHandDataset(BaseDataset):

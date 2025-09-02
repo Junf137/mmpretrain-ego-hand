@@ -8,6 +8,7 @@ from .cub import CUB
 from .custom import CustomDataset
 from .dataset_wrappers import KFoldDataset
 from .dtd import DTD
+from .ego_hand_dataset import EgoHandDataset
 from .fgvcaircraft import FGVCAircraft
 from .flowers102 import Flowers102
 from .food101 import Food101
@@ -27,7 +28,7 @@ from .voc import VOC
 
 __all__ = [
     'BaseDataset', 'CIFAR10', 'CIFAR100', 'CUB', 'Caltech101', 'CustomDataset',
-    'DTD', 'FGVCAircraft', 'FashionMNIST', 'Flowers102', 'Food101', 'ImageNet',
+    'DTD', 'EgoHandDataset', 'FGVCAircraft', 'FashionMNIST', 'Flowers102', 'Food101', 'ImageNet',
     'ImageNet21k', 'InShop', 'KFoldDataset', 'MNIST', 'MultiLabelDataset',
     'MultiTaskDataset', 'NLVR2', 'OxfordIIITPet', 'Places205', 'SUN397',
     'StanfordCars', 'VOC', 'build_dataset'

@@ -1,10 +1,7 @@
 import torch
 import torch.nn as nn
-from mmpretrain.models import ImageClassifier
 from mmpretrain.registry import MODELS
-from mmpretrain.models.backbones import ResNet
-from mmpretrain.models.heads import LinearClsHead
-from mmpretrain.models.utils import FCneck  # Simple MLP neck
+from .image import ImageClassifier
 
 @MODELS.register_module()
 class EgoClassifier(ImageClassifier):
@@ -24,23 +21,53 @@ class EgoClassifier(ImageClassifier):
         )
 
     def extract_feat(self, inputs, stage='neck'):
-        img, hamer_feats = inputs  # inputs is tuple (img_tensor, hamer_tensor)
+        """Extract features from both image and hamer features.
 
-        # Image features
-        img_feats = self.backbone(img)
+        Args:
+            inputs (Tensor): Image tensor with shape (N, C, H, W)
+            stage (str): Which stage to output the feature.
+        """
+        # Image features (standard backbone processing)
+        img_feats = self.backbone(inputs)
         if self.with_neck:
             img_feats = self.neck(img_feats)
 
-        # Hamer features
+        return img_feats
+
+    def forward(self, inputs, data_samples=None, mode='tensor'):
+        """Forward function.
+
+        Args:
+            inputs (Tensor): Image tensor with shape (N, C, H, W)
+            data_samples (List[DataSample], optional): The data samples that
+                include hamer_feats and other meta information.
+            mode (str): Return mode, 'tensor', 'predict' or 'loss'.
+        """
+        # Extract image features
+        img_feats = self.extract_feat(inputs)
+
+        # Extract hamer features from data_samples
+        if data_samples is not None:
+            hamer_feats = torch.stack([sample.hamer_feats for sample in data_samples])
+            hamer_feats = hamer_feats.to(img_feats.device)
+        else:
+            # If no data_samples provided, create zero hamer features
+            batch_size = inputs.size(0)
+            hamer_feats = torch.zeros(batch_size, 49, device=inputs.device)
+
+        # Process hamer features
         hamer_feats = self.hamer_encoder(hamer_feats)  # (B, 256)
 
-        # Concat: Assume img_feats is (B, C), e.g., 2048 for ResNet
+        # Concatenate features
         feats = torch.cat([img_feats, hamer_feats], dim=1)  # (B, 2048+256)
 
-        return feats
-
-    def forward(self, inputs, **kwargs):
-        feats = self.extract_feat(inputs)
+        # Pass through head if available
         if self.with_head:
-            return self.head(feats, **kwargs)
+            if mode == 'loss':
+                return self.head.loss(feats, data_samples)
+            elif mode == 'predict':
+                return self.head.predict(feats, data_samples)
+            else:  # mode == 'tensor'
+                return self.head(feats)
+
         return feats

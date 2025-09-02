@@ -27,16 +27,14 @@ train_pipeline = [
     dict(type='RandomResizedCrop', scale=224),
     dict(type='RandomFlip', prob=0.5, direction='horizontal'),
     dict(type='Normalize', mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True),
-    dict(type='ImageToTensor', keys=['img']),
-    dict(type='Collect', keys=['img', 'gt_label', 'hamer_feats'])  # Collect includes hamer_feats
+    dict(type='PackInputs', algorithm_keys=['hamer_feats'])
 ]
 
 val_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='Resize', scale=(224, 224)),
     dict(type='Normalize', mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True),
-    dict(type='ImageToTensor', keys=['img']),
-    dict(type='Collect', keys=['img', 'gt_label', 'hamer_feats'])
+    dict(type='PackInputs', algorithm_keys=['hamer_feats'])
 ]
 
 train_dataloader = dict(
