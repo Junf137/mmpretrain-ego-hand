@@ -12,9 +12,15 @@
 
 # Notes:
 # - For binary classification, you can adjust head to num_classes=1 with BCE loss if preferred.
-# - Handle class imbalance: Add class_weight to loss or use sampler.
+# - Handle class imbalance: Multiple approaches available (see below).
 # - Augmentations sync for hamer_feats (e.g., flip): Implement custom transform if needed.
 # - Register custom classes: Ensure files are in mmpretrain/ subdirs and imported properly.
+
+# CLASS IMBALANCE HANDLING OPTIONS:
+# 1. Class weights in loss (IMPLEMENTED BELOW): class_weight=[2.0, 1.0] for emphasizing class 0
+# 2. Weighted sampler: Replace DefaultSampler with WeightedRandomSampler
+# 3. Focal Loss: Replace CrossEntropyLoss with FocalLoss
+# 4. Combination: Use both weighted sampling + class weights
 
 # Config file for training
 
@@ -37,6 +43,8 @@ val_pipeline = [
     dict(type='PackInputs', algorithm_keys=['hamer_feats'])
 ]
 
+# Option 2: Weighted Random Sampler
+# Requires knowing your class distribution first.
 train_dataloader = dict(
     batch_size=32,
     num_workers=8,
@@ -45,7 +53,12 @@ train_dataloader = dict(
         ann_file=data_root + 'train_0.json',
         pipeline=train_pipeline,
     ),
-    sampler=dict(type='DefaultSampler', shuffle=True),
+    sampler=dict(
+        type='WeightedRandomSampler',
+        weights=[6.0, 0.5],  # Higher weight for minority class (class 0)
+        num_samples=10000,   # Total samples per epoch (adjust based on your data size)
+        replacement=True
+    ),
 )
 
 val_dataloader = dict(
@@ -60,6 +73,15 @@ val_dataloader = dict(
 )
 
 test_dataloader = val_dataloader
+
+# Option 3: Focal Loss (uncomment to replace CrossEntropyLoss)
+# Good for extreme imbalance, focuses on hard examples
+# loss=dict(
+#     type='FocalLoss',
+#     alpha=0.75,      # Weight for rare class (class 0)
+#     gamma=2.0,       # Focusing parameter (higher = more focus on hard examples)
+#     loss_weight=1.0
+# ),
 
 # Model config
 model = dict(
@@ -76,7 +98,11 @@ model = dict(
         type='LinearClsHead',
         num_classes=2,  # Binary, but use 2 classes for softmax/cross-entropy
         in_channels=2048 + 256,  # Image feats + hamer feats
-        loss=dict(type='CrossEntropyLoss', loss_weight=1.0),
+        loss=dict(
+            type='CrossEntropyLoss',
+            loss_weight=1.0,
+            class_weight=[6.0, 0.5]  # [weight_for_class_0, weight_for_class_1] Higher weight for negative class (class 0)
+        ),
         topk=(1,),
     ),
 )
