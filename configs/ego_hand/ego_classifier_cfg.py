@@ -43,8 +43,6 @@ val_pipeline = [
     dict(type='PackInputs', algorithm_keys=['hamer_feats'])
 ]
 
-# Option 2: Weighted Random Sampler
-# Requires knowing your class distribution first.
 train_dataloader = dict(
     batch_size=32,
     num_workers=8,
@@ -53,12 +51,7 @@ train_dataloader = dict(
         ann_file=data_root + 'train_0.json',
         pipeline=train_pipeline,
     ),
-    sampler=dict(
-        type='WeightedRandomSampler',
-        weights=[6.0, 0.5],  # Higher weight for minority class (class 0)
-        num_samples=10000,   # Total samples per epoch (adjust based on your data size)
-        replacement=True
-    ),
+    sampler=dict(type='DefaultSampler', shuffle=True),
 )
 
 val_dataloader = dict(
