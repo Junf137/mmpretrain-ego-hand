@@ -75,15 +75,3 @@ class EgoHandDataset(BaseDataset):
             }
             processed_list.append(data_info)
         return processed_list
-
-    def get_data_info(self, idx: int) -> dict:
-        """Get annotation by index.
-
-        Args:
-            idx (int): Global index of data.
-
-        Returns:
-            dict: The idx-th annotation of the dataset.
-        """
-        data_info = self.data_list[idx].copy()
-        return data_info
