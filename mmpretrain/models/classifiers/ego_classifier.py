@@ -46,6 +46,10 @@ class EgoClassifier(ImageClassifier):
         # Extract image features
         img_feats = self.extract_feat(inputs)
 
+        # Handle case where img_feats might be a tuple (from backbone stages)
+        if isinstance(img_feats, tuple):
+            img_feats = img_feats[-1]  # Use the last stage features
+
         # Extract hamer features from data_samples
         if data_samples is not None:
             hamer_feats = torch.stack([sample.hamer_feats for sample in data_samples])
