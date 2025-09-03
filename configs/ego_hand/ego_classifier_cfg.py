@@ -27,6 +27,8 @@
 dataset_type = 'EgoHandDataset'
 data_root = 'data/ego_hand/'  # Adjust to your data root
 
+work_dir = 'work_dirs/ego_hand'
+
 # Pipeline for image processing (hamer_feats not transformed)
 train_pipeline = [
     dict(type='LoadImageFromFile'),
@@ -65,7 +67,16 @@ val_dataloader = dict(
     sampler=dict(type='DefaultSampler', shuffle=False),
 )
 
-test_dataloader = val_dataloader
+test_dataloader = dict(
+    batch_size=32,
+    num_workers=8,
+    dataset=dict(
+        type=dataset_type,
+        ann_file=data_root + 'test.json',
+        pipeline=val_pipeline,
+    ),
+    sampler=dict(type='DefaultSampler', shuffle=False),
+)
 
 # Option 3: Focal Loss (uncomment to replace CrossEntropyLoss)
 # Good for extreme imbalance, focuses on hard examples
