@@ -15,6 +15,7 @@ import json
 import subprocess
 from pathlib import Path
 from typing import Dict, List, Optional
+import torch
 
 from mmengine.config import Config, ConfigDict
 from mmengine.runner import Runner
@@ -203,6 +204,16 @@ def create_summary_report(all_results: List[Dict], work_dir: str) -> None:
 
 
 def main():
+    # Fix for PyTorch 2.6 weights_only=True default behavior
+    # Temporarily patch torch.load to use weights_only=False for trusted checkpoints
+    original_torch_load = torch.load
+    def patched_torch_load(f, map_location=None, pickle_module=None, **kwargs):
+        if 'weights_only' not in kwargs:
+            kwargs['weights_only'] = False
+        return original_torch_load(f, map_location=map_location, pickle_module=pickle_module, **kwargs)
+
+    torch.load = patched_torch_load
+
     args = parse_args()
 
     # Load base configuration
@@ -243,6 +254,8 @@ def main():
 
     print('=== 5-Fold Cross Validation Complete ===')
 
+    # Restore original torch.load function
+    torch.load = original_torch_load
 
 if __name__ == '__main__':
     main()
