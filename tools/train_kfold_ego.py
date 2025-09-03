@@ -202,16 +202,6 @@ def create_summary_report(all_results: List[Dict], work_dir: str) -> None:
     print(f'Summary saved to: {summary_file}')
 
 
-def commit_changes(message: str) -> None:
-    """Create a git commit with the given message."""
-    try:
-        subprocess.run(['git', 'add', '.'], check=True, cwd='.')
-        subprocess.run(['git', 'commit', '-m', message], check=True, cwd='.')
-        print(f'Created git commit: {message}')
-    except subprocess.CalledProcessError as e:
-        print(f'Warning: Git commit failed: {e}')
-
-
 def main():
     args = parse_args()
 
@@ -221,9 +211,6 @@ def main():
 
     # Create main work directory
     mkdir_or_exist(args.work_dir)
-
-    # Create initial git commit for configuration
-    commit_changes('feat: Add improved config with wandb integration and 5-fold CV setup')
 
     # Determine which folds to train
     if args.fold is not None:
@@ -245,9 +232,6 @@ def main():
             fold_results = train_fold(fold_cfg, fold, args)
             all_results.append(fold_results)
 
-            # Create commit after each fold
-            commit_changes(f'feat: Complete training for fold {fold}')
-
         except Exception as e:
             print(f'Error training fold {fold}: {e}')
             # Continue with next fold
@@ -256,7 +240,6 @@ def main():
     # Create final summary
     if all_results:
         create_summary_report(all_results, args.work_dir)
-        commit_changes('feat: Complete 5-fold cross validation with summary report')
 
     print('=== 5-Fold Cross Validation Complete ===')
 
