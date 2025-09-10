@@ -1,35 +1,11 @@
-# This code implements the training pipeline using MMPretrain framework.
-# Assumptions:
-# - Data is preprocessed into a JSON file 'data/ego_hand/train.json' (list of dicts), each entry with:
-#   - 'image_path': str (full path to image)
-#   - 'hamer_feats': list of floats (flattened normalized joints_2d (42), bbox (4), box_center/size (3) -> 49 floats)
-#   - 'label': int (0 for non-ego, 1 for ego)
-# - Similar for valid.json and test.json.
-# - Images are accessible at the paths in JSON.
-# - For simplicity, we omit detection_confidence and hand_type from inputs.
-# - Model: ResNet50 for image, MLP for hamer_feats, concat and linear classifier.
-# - Place files in appropriate dirs: datasets/ego_hand_dataset.py, models/ego_classifier.py, configs/ego_hand/ego_classifier_cfg.py
 
-# Notes:
-# - For binary classification, you can adjust head to num_classes=1 with BCE loss if preferred.
-# - Handle class imbalance: Multiple approaches available (see below).
-# - Augmentations sync for hamer_feats (e.g., flip): Implement custom transform if needed.
-# - Register custom classes: Ensure files are in mmpretrain/ subdirs and imported properly.
-
-# CLASS IMBALANCE HANDLING OPTIONS:
-# 1. Class weights in loss (IMPLEMENTED BELOW): class_weight=[2.0, 1.0] for emphasizing class 0
-# 2. Weighted sampler: Replace DefaultSampler with WeightedRandomSampler
-# 3. Focal Loss: Replace CrossEntropyLoss with FocalLoss
-# 4. Combination: Use both weighted sampling + class weights
 
 # Config file for training
-
 dataset_type = 'EgoHandDataset'
 data_root = 'data/ego_hand/'  # Adjust to your data root
 
 work_dir = 'work_dirs/ego_hand'
 
-# Pipeline for image processing (hamer_feats not transformed)
 train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='RandomResizedCrop', scale=224),
@@ -78,15 +54,6 @@ test_dataloader = dict(
     sampler=dict(type='DefaultSampler', shuffle=False),
 )
 
-# Option 3: Focal Loss (uncomment to replace CrossEntropyLoss)
-# Good for extreme imbalance, focuses on hard examples
-# loss=dict(
-#     type='FocalLoss',
-#     alpha=0.75,      # Weight for rare class (class 0)
-#     gamma=2.0,       # Focusing parameter (higher = more focus on hard examples)
-#     loss_weight=1.0
-# ),
-
 # Model config
 model = dict(
     type='EgoClassifier',
@@ -100,12 +67,12 @@ model = dict(
     neck=dict(type='GlobalAveragePooling'),  # To get (B, 2048)
     head=dict(
         type='LinearClsHead',
-        num_classes=2,  # Binary, but use 2 classes for softmax/cross-entropy
-        in_channels=2048 + 256,  # Image feats + hamer feats
+        num_classes=4,  # 4-class: ego left/right, exo left/right
+        in_channels=2048 + 2048,  # Image feats (2048) + hamer feats (2048)
         loss=dict(
             type='CrossEntropyLoss',
             loss_weight=1.0,
-            class_weight=[6.0, 0.5]  # [weight_for_class_0, weight_for_class_1] Higher weight for negative class (class 0)
+            class_weight=[1.067, 1.042, 19.571, 19.2]  # Equal weights for all 4 classes initially
         ),
         topk=(1,),
     ),
@@ -125,7 +92,7 @@ param_scheduler = dict(
 )
 
 # Evaluator for validation and testing
-val_evaluator = dict(type='Accuracy', topk=(1,))
+val_evaluator = dict(type='Accuracy', topk=(1, 2))  # Top-1 and Top-2 accuracy for 4-class
 test_evaluator = val_evaluator
 
 # Train, valid, test setting

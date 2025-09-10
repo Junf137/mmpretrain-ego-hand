@@ -13,8 +13,8 @@ class EgoHandDataset(BaseDataset):
 
     This dataset loads from JSON annotation files containing:
     - image_path: Path to the image file
-    - hamer_feats: List of 49 floats from HAMER model
-    - label: Integer label (0 for non-ego, 1 for ego)
+    - hamer_feats: List of 57 floats from HAMER model
+    - label: Integer label (0=ego left, 1=ego right, 2=exo left, 3=exo right)
 
     Args:
         ann_file (str): Path to the JSON annotation file.
@@ -26,9 +26,9 @@ class EgoHandDataset(BaseDataset):
         **kwargs: Other arguments passed to BaseDataset.
     """
 
-    # Define default metainfo for binary classification
+    # Define default metainfo for 4-class classification
     METAINFO = {
-        'classes': ['non-ego', 'ego'],
+        'classes': ['ego_left', 'ego_right', 'exo_left', 'exo_right'],
         'paper_info': {
             'author': 'Custom Implementation',
             'title': 'Ego-Hand Classification with HAMER Features',

@@ -12,11 +12,11 @@ class EgoClassifier(ImageClassifier):
     def __init__(self, backbone, neck=None, head=None, **kwargs):
         super().__init__(backbone=backbone, neck=neck, head=head, **kwargs)
 
-        # Custom hamer encoder: MLP for 49-dim input to 256-dim
+        # Custom hamer encoder: MLP for 57-dim input to 2048-dim
         self.hamer_encoder = nn.Sequential(
-            nn.Linear(49, 512),
+            nn.Linear(57, 512),
             nn.ReLU(),
-            nn.Linear(512, 256),
+            nn.Linear(512, 2048),
             nn.ReLU()
         )
 
@@ -50,20 +50,17 @@ class EgoClassifier(ImageClassifier):
         if isinstance(img_feats, tuple):
             img_feats = img_feats[-1]  # Use the last stage features
 
-        # Extract hamer features from data_samples
         if data_samples is not None:
             hamer_feats = torch.stack([sample.hamer_feats for sample in data_samples])
             hamer_feats = hamer_feats.to(img_feats.device)
         else:
-            # If no data_samples provided, create zero hamer features
-            batch_size = inputs.size(0)
-            hamer_feats = torch.zeros(batch_size, 49, device=inputs.device)
+            raise ValueError("data_samples is required for EgoClassifier")
 
         # Process hamer features
-        hamer_feats = self.hamer_encoder(hamer_feats)  # (B, 256)
+        hamer_feats = self.hamer_encoder(hamer_feats)  # (B, 2048)
 
         # Concatenate features
-        feats = torch.cat([img_feats, hamer_feats], dim=1)  # (B, 2048+256)
+        feats = torch.cat([img_feats, hamer_feats], dim=1)  # (B, 2048+2048=4096)
 
         # Pass through head if available
         if self.with_head:
