@@ -50,7 +50,7 @@ train_dataloader = dict(
     num_workers=8,
     dataset=dict(
         type=dataset_type,
-        ann_file=data_root + 'train_0.json',
+        ann_file=data_root + 'train.json',
         pipeline=train_pipeline,
     ),
     sampler=dict(type='DefaultSampler', shuffle=True),
@@ -61,7 +61,7 @@ val_dataloader = dict(
     num_workers=8,
     dataset=dict(
         type=dataset_type,
-        ann_file=data_root + 'valid_0.json',
+        ann_file=data_root + 'valid.json',
         pipeline=val_pipeline,
     ),
     sampler=dict(type='DefaultSampler', shuffle=False),
@@ -166,8 +166,7 @@ visualizer = dict(
             type='WandbVisBackend',
             init_kwargs=dict(
                 project='ego-hand-classification',
-                name='ego_classifier_fold_{fold}',  # Will be formatted for each fold
-                group='5fold-cross-validation',
+                name='ego_classifier',
                 tags=['ego-hand', 'multimodal', 'hamer', 'resnet50'],
                 notes='Binary classification of ego-hand using ResNet50 + HAMER features'
             )

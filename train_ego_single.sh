@@ -1,14 +1,13 @@
 #!/bin/bash
-# 5-Fold Cross Validation Training Script for Ego-Hand Classification
-# Usage: ./train_ego_5fold.sh [OPTIONS]
+# Simple Training Script for Ego-Hand Classification
+# Usage: ./train_ego_single.sh [OPTIONS]
 
 set -e  # Exit on any error
 
 # Default parameters
 CONDA_ENV="vit_pose"
 CONFIG="configs/ego_hand/ego_classifier_cfg.py"
-WORK_DIR="./work_dirs/ego_hand_5fold"
-WANDB_PROJECT="ego-hand-classification"
+WORK_DIR="work_dirs/ego_hand_single"
 DATA_ROOT="data/ego_hand/"
 
 # Function to print usage
@@ -17,21 +16,18 @@ usage() {
     echo "Options:"
     echo "  -e, --env ENV_NAME        Conda environment name (default: vit_pose)"
     echo "  -c, --config CONFIG       Config file path (default: configs/ego_hand/ego_classifier_cfg.py)"
-    echo "  -w, --work-dir DIR        Work directory (default: ./work_dirs/ego_hand_5fold)"
-    echo "  -p, --project PROJECT     W&B project name (default: ego-hand-classification)"
+    echo "  -w, --work-dir DIR        Work directory (default: work_dirs/ego_hand_single)"
     echo "  -d, --data-root DIR       Data root directory (default: data/ego_hand/)"
-    echo "  -f, --fold FOLD           Train specific fold only (0-4)"
-    echo "  -r, --resume-fold FOLD    Resume from specific fold (0-4)"
     echo "  --amp                     Enable automatic mixed precision"
+    echo "  --resume                  Resume training from latest checkpoint"
     echo "  --seed SEED               Random seed (default: 42)"
     echo "  -h, --help                Show this help message"
     exit 1
 }
 
 # Parse command line arguments
-FOLD=""
-RESUME_FOLD=""
 AMP_FLAG=""
+RESUME_FLAG=""
 SEED="42"
 
 while [[ $# -gt 0 ]]; do
@@ -48,24 +44,16 @@ while [[ $# -gt 0 ]]; do
             WORK_DIR="$2"
             shift 2
             ;;
-        -p|--project)
-            WANDB_PROJECT="$2"
-            shift 2
-            ;;
         -d|--data-root)
             DATA_ROOT="$2"
             shift 2
             ;;
-        -f|--fold)
-            FOLD="--fold $2"
-            shift 2
-            ;;
-        -r|--resume-fold)
-            RESUME_FOLD="--resume-fold $2"
-            shift 2
-            ;;
         --amp)
             AMP_FLAG="--amp"
+            shift
+            ;;
+        --resume)
+            RESUME_FLAG="--resume"
             shift
             ;;
         --seed)
@@ -109,22 +97,23 @@ if [[ ! -d "$DATA_ROOT" ]]; then
 fi
 
 # Check if required data files exist
-for i in {0..4}; do
-    if [[ ! -f "${DATA_ROOT}/train_${i}.json" ]] || [[ ! -f "${DATA_ROOT}/valid_${i}.json" ]]; then
-        echo "Error: Missing data files for fold $i in '$DATA_ROOT'"
-        echo "Expected files: train_${i}.json, valid_${i}.json"
-        exit 1
-    fi
-done
+if [[ ! -f "${DATA_ROOT}/train.json" ]]; then
+    echo "Error: Missing train.json in '$DATA_ROOT'"
+    exit 1
+fi
 
-echo "=== Ego-Hand 5-Fold Cross Validation Training ==="
+if [[ ! -f "${DATA_ROOT}/valid.json" ]]; then
+    echo "Error: Missing valid.json in '$DATA_ROOT'"
+    exit 1
+fi
+
+echo "=== Ego-Hand Classification Training ==="
 echo "Conda Environment: $CONDA_ENV"
 echo "Config File: $CONFIG"
 echo "Work Directory: $WORK_DIR"
-echo "W&B Project: $WANDB_PROJECT"
 echo "Data Root: $DATA_ROOT"
 echo "Random Seed: $SEED"
-echo "=================================================="
+echo "========================================"
 
 # Activate conda environment and run training
 echo "Activating conda environment: $CONDA_ENV"
@@ -143,18 +132,15 @@ python -c "import torch; import mmengine; import mmpretrain; print('✓ All requ
 }
 
 # Run the training script
-echo "Starting 5-fold cross validation training..."
-python tools/train_kfold_ego.py \
+echo "Starting training..."
+python tools/train.py \
     "$CONFIG" \
     --work-dir "$WORK_DIR" \
-    --conda-env "$CONDA_ENV" \
-    --wandb-project "$WANDB_PROJECT" \
-    --data-root "$DATA_ROOT" \
-    --seed "$SEED" \
-    $FOLD \
-    $RESUME_FOLD \
-    $AMP_FLAG
+    --cfg-options randomness.seed="$SEED" \
+    --cfg-options data_root="$DATA_ROOT" \
+    $AMP_FLAG \
+    $RESUME_FLAG
 
 echo "=== Training Complete ==="
 echo "Results saved to: $WORK_DIR"
-echo "Check cross_validation_summary.json for overall results."
+echo "Best checkpoint: $(ls -t ${WORK_DIR}/*.pth 2>/dev/null | head -1 || echo 'No checkpoints found')"

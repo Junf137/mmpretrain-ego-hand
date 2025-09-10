@@ -7,7 +7,7 @@ Frame-based inference script for ego-hand classification with color-coded hand v
 ```bash
 python demo/ego_hand_inference.py \
     configs/ego_hand/ego_classifier_cfg.py \
-    work_dirs/ego_hand_5fold/fold_4/best_accuracy_top1_epoch_18.pth \
+    work_dirs/ego_hand_single/best_accuracy_top1_epoch_XX.pth \
     data/test/inference_data_list.json \
     --output predictions.json \
     --vis-dir ./visualizations \
@@ -92,7 +92,7 @@ JSON file with list of hand samples containing HAMER detection data:
 # Run inference with frame-based visualization
 python demo/ego_hand_inference.py \
     configs/ego_hand/ego_classifier_cfg.py \
-    work_dirs/ego_hand_5fold/fold_4/best_accuracy_top1_epoch_18.pth \
+    work_dirs/ego_hand_single/best_accuracy_top1_epoch_XX.pth \
     data/test/inference_data_list.json \
     --output test_predictions.json \
     --vis-dir ./test_visualizations \
