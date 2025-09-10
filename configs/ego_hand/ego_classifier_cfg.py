@@ -8,8 +8,9 @@ work_dir = 'work_dirs/ego_hand'
 
 train_pipeline = [
     dict(type='LoadImageFromFile'),
-    dict(type='RandomResizedCrop', scale=224),
-    dict(type='RandomFlip', prob=0.5, direction='horizontal'),
+    # dict(type='RandomResizedCrop', scale=224),
+    # dict(type='RandomFlip', prob=0.5, direction='horizontal'),
+    dict(type='Resize', scale=(224, 224)),
     dict(type='Normalize', mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True),
     dict(type='PackInputs', algorithm_keys=['hamer_feats'])
 ]
@@ -60,19 +61,19 @@ model = dict(
     backbone=dict(
         type='ResNet',
         depth=50,
-        num_stages=4,
-        out_indices=(3,),  # Global avg pool after stage 4
+        out_indices=(3,),
+        init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50'),
         style='pytorch',
     ),
-    neck=dict(type='GlobalAveragePooling'),  # To get (B, 2048)
+    neck=dict(type='GlobalAveragePooling'),
     head=dict(
         type='LinearClsHead',
         num_classes=4,  # 4-class: ego left/right, exo left/right
-        in_channels=2048 + 2048,  # Image feats (2048) + hamer feats (2048)
+        in_channels=2048 + 1024,
         loss=dict(
             type='CrossEntropyLoss',
             loss_weight=1.0,
-            class_weight=[1.067, 1.042, 19.571, 19.2]  # Equal weights for all 4 classes initially
+            class_weight=[1.067, 1.042, 8.571, 8.2]
         ),
         topk=(1,),
     ),
@@ -80,18 +81,24 @@ model = dict(
 
 # Optimizer
 optim_wrapper = dict(
-    optimizer=dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
+    type='AmpOptimWrapper',
+    optimizer=dict(type='AdamW', lr=5e-4, weight_decay=0.01),
+    paramwise_cfg=dict(
+        custom_keys={
+            'hamer_encoder': dict(lr_mult=5.0),
+            'head': dict(lr_mult=5.0),
+        }
+    )
 )
 
 # Learning policy
-param_scheduler = dict(
-    type='MultiStepLR',
-    by_epoch=True,
-    milestones=[30, 60, 90],
-    gamma=0.1,
-)
+param_scheduler = [
+    dict(type='LinearLR', start_factor=1e-3, by_epoch=False, begin=0, end=1000),
+    dict(type='CosineAnnealingLR', T_max=100, by_epoch=True)
+]
 
 # Evaluator for validation and testing
+# optionally add F1-score
 val_evaluator = dict(type='Accuracy', topk=(1, 2))  # Top-1 and Top-2 accuracy for 4-class
 test_evaluator = val_evaluator
 
@@ -135,7 +142,7 @@ visualizer = dict(
                 project='ego-hand-classification',
                 name='ego_classifier',
                 tags=['ego-hand', 'multimodal', 'hamer', 'resnet50'],
-                notes='Binary classification of ego-hand using ResNet50 + HAMER features'
+                notes='4-class classification of ego-hand using ResNet50 + HAMER features'
             )
         )
     ]
