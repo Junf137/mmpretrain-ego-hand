@@ -31,6 +31,8 @@ train_dataloader = dict(
         pipeline=train_pipeline,
     ),
     sampler=dict(type='DefaultSampler', shuffle=True),
+    persistent_workers=True,
+    pin_memory=True
 )
 
 val_dataloader = dict(
@@ -42,6 +44,8 @@ val_dataloader = dict(
         pipeline=val_pipeline,
     ),
     sampler=dict(type='DefaultSampler', shuffle=False),
+    persistent_workers=True,
+    pin_memory=True
 )
 
 test_dataloader = dict(
@@ -53,6 +57,8 @@ test_dataloader = dict(
         pipeline=val_pipeline,
     ),
     sampler=dict(type='DefaultSampler', shuffle=False),
+    persistent_workers=True,
+    pin_memory=True
 )
 
 # Model config
@@ -75,7 +81,7 @@ model = dict(
             loss_weight=1.0,
             class_weight=[1.067, 1.042, 8.571, 8.2]
         ),
-        topk=(1,),
+        topk=(1, 2),
     ),
 )
 
@@ -88,7 +94,8 @@ optim_wrapper = dict(
             'hamer_encoder': dict(lr_mult=5.0),
             'head': dict(lr_mult=5.0),
         }
-    )
+    ),
+    clip_grad=dict(max_norm=5.0, norm_type=2)
 )
 
 # Learning policy
@@ -98,8 +105,10 @@ param_scheduler = [
 ]
 
 # Evaluator for validation and testing
-# optionally add F1-score
-val_evaluator = dict(type='Accuracy', topk=(1, 2))  # Top-1 and Top-2 accuracy for 4-class
+val_evaluator = [
+    dict(type='Accuracy', topk=(1, 2)),
+    dict(type='SingleLabelMetric', items=['precision', 'recall', 'f1-score'], average='macro')
+]
 test_evaluator = val_evaluator
 
 # Train, valid, test setting
@@ -119,8 +128,8 @@ default_hooks = dict(
         type='CheckpointHook',
         interval=1,
         max_keep_ckpts=3,  # Keep only 3 checkpoints to save disk space
-        save_best='auto',  # Automatically save best checkpoint based on validation metric
-        rule='greater'     # For accuracy, higher is better
+        save_best='f1-score/macro',
+        rule='greater'
     ),
     sampler_seed=dict(type='DistSamplerSeedHook'),
     visualization=dict(
@@ -130,6 +139,11 @@ default_hooks = dict(
         show=False,    # Don't show images during training
     ),
 )
+
+custom_hooks = [
+    dict(type='EarlyStoppingHook', monitor='f1-score/macro', rule='greater',
+         patience=10, min_delta=0.0)
+]
 
 # Configure visualizer with wandb backend
 visualizer = dict(
