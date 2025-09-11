@@ -1,4 +1,3 @@
-
 # Config file for training
 dataset_type = 'EgoHandDataset'
 data_root = 'data/ego_hand/'  # Adjust to your data root
@@ -80,6 +79,7 @@ model = dict(
         loss=dict(
             type='CrossEntropyLoss',
             loss_weight=1.0,
+            label_smooth_eps=0.05,
         ),
         topk=(1, 2),
     ),
@@ -176,4 +176,4 @@ load_from = None
 resume = False
 
 # Set random seed for reproducibility
-randomness = dict(seed=42, deterministic=False)
+randomness = dict(seed=42, deterministic=True)

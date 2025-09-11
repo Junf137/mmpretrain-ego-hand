@@ -19,12 +19,11 @@ class EgoClassifier(ImageClassifier):
             nn.Linear(512, 1024), nn.ReLU(inplace=True),
         )
 
-    def extract_feat(self, inputs, stage='neck'):
+    def extract_feat(self, inputs):
         """Extract features from both image and hamer features.
 
         Args:
             inputs (Tensor): Image tensor with shape (N, C, H, W)
-            stage (str): Which stage to output the feature.
         """
         # Image features (standard backbone processing)
         img_feats = self.backbone(inputs)
