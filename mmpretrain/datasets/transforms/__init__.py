@@ -17,6 +17,7 @@ from .processing import (Albumentations, BEiTMaskGenerator, CleanCaption,
                          RandomResizedCrop,
                          RandomResizedCropAndInterpolationWithTwoPic,
                          RandomTranslatePad, ResizeEdge, SimMIMMaskGenerator)
+from .transforms_ego_hand import EgoSyncedHorizontalFlip, LoadHamerFeats
 from .utils import get_transform_idx, remove_transform
 from .wrappers import ApplyToList, MultiView
 
@@ -37,5 +38,5 @@ __all__ = [
     'RandomFlip', 'RandomGrayscale', 'RandomResize', 'Resize', 'MultiView',
     'ApplyToList', 'CleanCaption', 'RandomTranslatePad',
     'RandomResizedCropAndInterpolationWithTwoPic', 'get_transform_idx',
-    'remove_transform', 'MAERandomResizedCrop'
+    'remove_transform', 'MAERandomResizedCrop', 'EgoSyncedHorizontalFlip', 'LoadHamerFeats'
 ]
