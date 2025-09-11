@@ -30,7 +30,7 @@ train_dataloader = dict(
         ann_file=data_root + 'train.json',
         pipeline=train_pipeline,
     ),
-    sampler=dict(type='DefaultSampler', shuffle=True),
+    sampler=dict(type='DistributedWeightedSampler'),
     persistent_workers=True,
     pin_memory=True
 )
@@ -79,7 +79,6 @@ model = dict(
         loss=dict(
             type='CrossEntropyLoss',
             loss_weight=1.0,
-            class_weight=[1.067, 1.042, 8.571, 8.2]
         ),
         topk=(1, 2),
     ),
