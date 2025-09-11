@@ -33,8 +33,6 @@ class EgoSyncedHorizontalFlip(BaseTransform):
         results['img'] = mmcv.imflip(img, direction='horizontal')
 
         feats = results['hamer_feats']
-        if not torch.is_tensor(feats):
-            feats = torch.tensor(feats, dtype=torch.float32)
 
         if len(feats) != 57:
             raise ValueError(f"Expected 57-dimensional HAMER features, got {len(feats)}")
@@ -99,10 +97,8 @@ class StandardizeHamerFeats(BaseTransform):
         self.std = torch.tensor(mean_std['std'], dtype=torch.float32)
         self.eps = eps
     def transform(self, results):
-        x = results['hamer_feats']
-        if not torch.is_tensor(x):
-            x = torch.tensor(x, dtype=torch.float32)
-        results['hamer_feats'] = (x - self.mean) / (self.std + self.eps)
+        feats = results['hamer_feats']
+        results['hamer_feats'] = (feats - self.mean) / (self.std + self.eps)
         return results
 
 
