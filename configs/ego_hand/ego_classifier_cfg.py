@@ -83,6 +83,7 @@ model = dict(
         ),
         topk=(1, 2),
     ),
+    use_tta_flip=True,
 )
 
 # Optimizer
