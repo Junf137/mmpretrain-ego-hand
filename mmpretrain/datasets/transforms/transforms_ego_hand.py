@@ -24,7 +24,7 @@ class EgoSyncedHorizontalFlip(BaseTransform):
         self.prob = prob
 
     def transform(self, results):
-        if random.random() >= self.prob:
+        if np.random.rand() >= self.prob:
             return results
 
         img = results['img']  # HWC, BGR or RGB depending on pipeline
@@ -40,29 +40,37 @@ class EgoSyncedHorizontalFlip(BaseTransform):
 
         feats = feats.clone()
 
-        # Flip 2D joint coordinates (x-coordinates only)
-        joints = feats[:42].view(21, 2)  # 21 joints × 2 coordinates
-        joints[:, 0] = 1.0 - joints[:, 0]  # flip x-coordinates
-        feats[:42] = joints.flatten()
+        # Heuristic: if both bbox==0 and all joints==0 → consider invalid
+        bbox_zero = (feats[42:46].abs().sum() == 0)
+        joints_zero = (feats[:42].abs().sum() == 0)
+        feats_valid = not (bbox_zero and joints_zero)
 
-        # Flip bounding box coordinates
-        x1, y1, x2, y2 = feats[42:46]
-        feats[42] = 1.0 - x2  # new x1 = 1 - old x2
-        feats[44] = 1.0 - x1  # new x2 = 1 - old x1
-        # y coordinates unchanged (feats[43], feats[45])
+        # Only flip HAMER features if valid
+        if feats_valid:
+            # Flip 2D joint coordinates (x-coordinates only)
+            joints = feats[:42].view(21, 2)  # 21 joints × 2 coordinates
+            joints[:, 0] = 1.0 - joints[:, 0]  # flip x-coordinates
+            feats[:42] = joints.flatten()
 
-        # Flip box center x-coordinate
-        feats[46] = 1.0 - feats[46]  # cx flipped
-        # cy unchanged (feats[47])
+            # Flip bounding box coordinates
+            x1, y1, x2, y2 = feats[42:46]
+            feats[42] = 1.0 - x2  # new x1 = 1 - old x2
+            feats[44] = 1.0 - x1  # new x2 = 1 - old x1
+            # y coordinates unchanged (feats[43], feats[45])
 
-        # Flip direction vectors (x-components only)
-        feats[50] = -feats[50]  # wrist_to_middle vx
-        feats[52] = -feats[52]  # wrist_to_thumb vx
-        # vy components unchanged (feats[51], feats[53])
+            # Flip box center x-coordinate
+            feats[46] = 1.0 - feats[46]  # cx flipped
+            # cy unchanged (feats[47])
 
-        # Flip hand_type: left ↔ right
-        feats[54] = 1.0 - feats[54]  # 0 ↔ 1
+            # Flip direction vectors (x-components only)
+            feats[50] = -feats[50]  # wrist_to_middle vx
+            feats[52] = -feats[52]  # wrist_to_thumb vx
+            # vy components unchanged (feats[51], feats[53])
 
+            # Flip hand_type: left ↔ right
+            feats[54] = 1.0 - feats[54]  # 0 ↔ 1
+
+        # Always flip the LABEL (image truly flipped)
         # Flip 4-class labels: ego_left ↔ ego_right, exo_left ↔ exo_right
         lbl = int(results['gt_label'])
         if lbl == 0:      # ego_left → ego_right
