@@ -1,6 +1,7 @@
 import random
 import torch
 import numpy as np
+import json
 import mmcv
 from mmcv.transforms import BaseTransform
 from mmengine.registry import TRANSFORMS
@@ -85,6 +86,23 @@ class EgoSyncedHorizontalFlip(BaseTransform):
             raise ValueError(f"Invalid label {lbl}. Expected 0-3 for 4-class classification.")
 
         results['hamer_feats'] = feats
+        return results
+
+
+@TRANSFORMS.register_module()
+class StandardizeHamerFeats(BaseTransform):
+    def __init__(self, mean_std_file, eps=1e-6):
+        with open(mean_std_file, 'r') as f:
+            mean_std = json.load(f)
+
+        self.mean = torch.tensor(mean_std['mean'], dtype=torch.float32)
+        self.std = torch.tensor(mean_std['std'], dtype=torch.float32)
+        self.eps = eps
+    def transform(self, results):
+        x = results['hamer_feats']
+        if not torch.is_tensor(x):
+            x = torch.tensor(x, dtype=torch.float32)
+        results['hamer_feats'] = (x - self.mean) / (self.std + self.eps)
         return results
 
 
