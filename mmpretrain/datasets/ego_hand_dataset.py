@@ -28,31 +28,27 @@ class EgoHandDataset(BaseDataset):
 
     # Define default metainfo for 4-class classification
     METAINFO = {
-        'classes': ['ego_left', 'ego_right', 'exo_left', 'exo_right'],
-        'paper_info': {
-            'author': 'Custom Implementation',
-            'title': 'Ego-Hand Classification with HAMER Features',
-            'container': 'Custom Dataset'
-        }
+        "classes": ["ego_left", "ego_right", "exo_left", "exo_right"],
+        "paper_info": {
+            "author": "Custom Implementation",
+            "title": "Ego-Hand Classification with HAMER Features",
+            "container": "Custom Dataset",
+        },
     }
 
-    def __init__(self,
-                 ann_file: str,
-                 metainfo: Optional[dict] = None,
-                 data_root: str = '',
-                 data_prefix: Union[str, dict] = '',
-                 **kwargs):
+    def __init__(
+        self,
+        ann_file: str,
+        metainfo: Optional[dict] = None,
+        data_root: str = "",
+        data_prefix: Union[str, dict] = "",
+        **kwargs
+    ):
         # Set default metainfo if not provided
         if metainfo is None:
             metainfo = self.METAINFO
 
-        super().__init__(
-            ann_file=ann_file,
-            metainfo=metainfo,
-            data_root=data_root,
-            data_prefix=data_prefix,
-            **kwargs
-        )
+        super().__init__(ann_file=ann_file, metainfo=metainfo, data_root=data_root, data_prefix=data_prefix, **kwargs)
 
     def load_data_list(self) -> List[dict]:
         """Load data information from annotation file.
@@ -63,15 +59,15 @@ class EgoHandDataset(BaseDataset):
                 - gt_label: Ground truth label
                 - hamer_feats: HAMER features as tensor
         """
-        with open(self.ann_file, 'r') as f:
+        with open(self.ann_file, "r") as f:
             data_list = json.load(f)
 
         processed_list = []
         for item in data_list:
             data_info = {
-                'img_path': item['image_path'],
-                'gt_label': item['label'],
-                'hamer_feats': torch.tensor(item['hamer_feats'], dtype=torch.float32)
+                "img_path": item["image_path"],
+                "gt_label": item["label"],
+                "hamer_feats": torch.tensor(item["hamer_feats"], dtype=torch.float32),
             }
             processed_list.append(data_info)
         return processed_list

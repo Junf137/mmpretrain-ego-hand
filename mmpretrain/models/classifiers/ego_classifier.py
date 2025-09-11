@@ -4,20 +4,29 @@ import torch.nn.functional as F
 from mmpretrain.registry import MODELS
 from .image import ImageClassifier
 
+
 @MODELS.register_module()
 class EgoClassifier(ImageClassifier):
     """Custom multimodal classifier for ego-hand detection.
 
     Takes image and hamer_feats, encodes separately, concatenates, classifies.
     """
+
     def __init__(self, backbone, neck=None, head=None, use_tta_flip=False, **kwargs):
         super().__init__(backbone=backbone, neck=neck, head=head, **kwargs)
         self.use_tta_flip = use_tta_flip
 
         self.hamer_encoder = nn.Sequential(
-            nn.Linear(57, 256), nn.ReLU(inplace=True), nn.LayerNorm(256), nn.Dropout(0.1),
-            nn.Linear(256, 512), nn.ReLU(inplace=True), nn.LayerNorm(512), nn.Dropout(0.1),
-            nn.Linear(512, 1024), nn.ReLU(inplace=True),
+            nn.Linear(57, 256),
+            nn.ReLU(inplace=True),
+            nn.LayerNorm(256),
+            nn.Dropout(0.1),
+            nn.Linear(256, 512),
+            nn.ReLU(inplace=True),
+            nn.LayerNorm(512),
+            nn.Dropout(0.1),
+            nn.Linear(512, 1024),
+            nn.ReLU(inplace=True),
         )
 
     def extract_feat(self, inputs):
@@ -39,13 +48,13 @@ class EgoClassifier(ImageClassifier):
         joints = feats[:, :42].view(-1, 21, 2)
         joints[..., 0] = 1.0 - joints[..., 0]
         feats[:, :42] = joints.reshape(-1, 42)
-        x1,y1,x2,y2 = feats[:,42],feats[:,43],feats[:,44],feats[:,45]
-        feats[:,42] = 1.0 - x2
-        feats[:,44] = 1.0 - x1
-        feats[:,46] = 1.0 - feats[:,46]    # center_x
-        feats[:,50] = -feats[:,50]         # dir x
-        feats[:,52] = -feats[:,52]
-        feats[:,54] = 1.0 - feats[:,54]    # hand_type
+        x1, y1, x2, y2 = feats[:, 42], feats[:, 43], feats[:, 44], feats[:, 45]
+        feats[:, 42] = 1.0 - x2
+        feats[:, 44] = 1.0 - x1
+        feats[:, 46] = 1.0 - feats[:, 46]  # center_x
+        feats[:, 50] = -feats[:, 50]  # dir x
+        feats[:, 52] = -feats[:, 52]
+        feats[:, 54] = 1.0 - feats[:, 54]  # hand_type
         return feats
 
     @staticmethod
@@ -62,7 +71,7 @@ class EgoClassifier(ImageClassifier):
         feats = torch.cat([img_feats, hamer_enc], dim=1)
         return feats
 
-    def forward(self, inputs, data_samples=None, mode='tensor'):
+    def forward(self, inputs, data_samples=None, mode="tensor"):
         """Forward function.
 
         Args:
@@ -77,11 +86,11 @@ class EgoClassifier(ImageClassifier):
         # Stack HAMER feats from samples
         hamer = torch.stack([s.hamer_feats for s in data_samples]).to(inputs.device)
 
-        if mode == 'loss':
+        if mode == "loss":
             feats = self._encode(inputs, hamer)
             return self.head.loss((feats,), data_samples)
 
-        if mode == 'predict':
+        if mode == "predict":
             if not self.use_tta_flip:
                 feats = self._encode(inputs, hamer)
                 return self.head.predict((feats,), data_samples)
@@ -91,7 +100,7 @@ class EgoClassifier(ImageClassifier):
             logits_orig = self.head((feats_orig,))  # returns logits tensor
 
             # --- TTA: flipped
-            inputs_f = torch.flip(inputs, dims=[-1])       # width flip
+            inputs_f = torch.flip(inputs, dims=[-1])  # width flip
             hamer_f = self._flip_hamer_feats(hamer)
             feats_f = self._encode(inputs_f, hamer_f)
             logits_f = self.head((feats_f,))
