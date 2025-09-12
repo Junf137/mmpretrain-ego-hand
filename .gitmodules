@@ -1,0 +1,3 @@
+[submodule "ego_hands"]
+	path = ego_hands
+	url = git@github.com:Junf137/ego_hands.git
