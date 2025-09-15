@@ -3,6 +3,7 @@ import argparse
 import os
 import os.path as osp
 from copy import deepcopy
+import torch
 
 from mmengine.config import Config, ConfigDict, DictAction
 from mmengine.registry import RUNNERS
@@ -144,6 +145,16 @@ def main():
 
     # merge cli arguments to config
     cfg = merge_args(cfg, args)
+
+    # Fix for PyTorch 2.6 weights_only=True default behavior
+    # Temporarily patch torch.load to use weights_only=False for trusted checkpoints
+    original_torch_load = torch.load
+    def patched_torch_load(f, map_location=None, pickle_module=None, **kwargs):
+        if 'weights_only' not in kwargs:
+            kwargs['weights_only'] = False
+        return original_torch_load(f, map_location=map_location, pickle_module=pickle_module, **kwargs)
+
+    torch.load = patched_torch_load
 
     # build the runner from config
     if 'runner_type' not in cfg:
