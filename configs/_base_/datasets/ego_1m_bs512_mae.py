@@ -1,6 +1,6 @@
 # dataset settings
-dataset_type = 'ImageNet'
-data_root = 'data/imagenet/'
+dataset_type = 'CustomDataset'
+data_root = 'data/frames_1m/frames/'
 data_preprocessor = dict(
     type='SelfSupDataPreprocessor',
     mean=[123.675, 116.28, 103.53],
@@ -12,10 +12,10 @@ train_pipeline = [
     dict(
         type='RandomResizedCrop',
         scale=224,
-        crop_ratio_range=(0.2, 1.0),
+        crop_ratio_range=(0.8, 1.0),
         backend='pillow',
         interpolation='bicubic'),
-    dict(type='RandomFlip', prob=0.5),
+    dict(type='RandomFlip', prob=0.5, direction='horizontal'),
     dict(type='PackInputs')
 ]
 
@@ -28,5 +28,5 @@ train_dataloader = dict(
     dataset=dict(
         type=dataset_type,
         data_root=data_root,
-        split='train',
+        with_label=False,
         pipeline=train_pipeline))
