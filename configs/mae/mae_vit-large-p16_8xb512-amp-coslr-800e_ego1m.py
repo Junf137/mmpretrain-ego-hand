@@ -48,7 +48,7 @@ param_scheduler = [
 # runtime settings
 train_cfg = dict(type='EpochBasedTrainLoop', max_epochs=800)
 default_hooks = dict(
-    # only keeps the latest 3 checkpoints
+    logger=dict(type='LoggerHook', interval=50, log_metric_by_epoch=True),
     checkpoint=dict(type='CheckpointHook', interval=1, max_keep_ckpts=3))
 
 randomness = dict(seed=0, diff_rank_seed=True)
@@ -59,3 +59,17 @@ resume = True
 # NOTE: `auto_scale_lr` is for automatically scaling LR
 # based on the actual training batch size.
 auto_scale_lr = dict(base_batch_size=4096)
+
+# Visualizer settings
+vis_backends = [
+    dict(type='LocalVisBackend'),
+    dict(
+        type='WandbVisBackend',
+        init_kwargs=dict(
+            project='ego1m-mae',
+            name='mae_vit-l16_ego1m_continue',
+            entity='mecka-ai',
+        ),
+    ),
+]
+visualizer = dict(type='UniversalVisualizer', vis_backends=vis_backends, name='visualizer')
