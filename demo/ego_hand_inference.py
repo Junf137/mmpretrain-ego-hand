@@ -23,9 +23,8 @@ from mmpretrain.structures import DataSample
 # Import utilities from ego_hands tools
 import sys
 from pathlib import Path
-ego_hands_path = Path(__file__).parent.parent / 'tools' / 'ego_hands'
-if str(ego_hands_path) not in sys.path:
-    sys.path.insert(0, str(ego_hands_path))
+ego_hands_path = Path(__file__).parent.parent / 'ego_hands' / 'ego_hands'
+sys.path.insert(0, str(ego_hands_path))
 
 try:
     from hamer_utilities import (

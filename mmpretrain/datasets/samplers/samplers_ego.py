@@ -1,15 +1,15 @@
 from torch.utils.data import Sampler
 import torch
 import math
-from mmengine.registry import SAMPLERS
+from mmpretrain.registry import DATA_SAMPLERS
 from mmengine.dist import get_world_size, get_rank
 
 
-@SAMPLERS.register_module()
+@DATA_SAMPLERS.register_module()
 class DistributedWeightedSampler(Sampler):
     """Class-balanced sampler usable with MMEngine dataloaders and DDP."""
 
-    def __init__(self, dataset, ann_file_key="ann_file", replacement=True):
+    def __init__(self, dataset, ann_file_key="ann_file", replacement=True, seed=None):
         # dataset has .data_list where each item has 'gt_label'
         labels = [int(x["gt_label"]) for x in dataset.data_list]
         num_classes = max(labels) + 1
@@ -19,6 +19,7 @@ class DistributedWeightedSampler(Sampler):
         self.weights = (weights / weights.sum()).double().tolist()
         self.dataset = dataset
         self.replacement = replacement
+        self.seed = seed
 
         # per-rank num samples
         world_size = get_world_size()

@@ -80,7 +80,6 @@ model = dict(
         loss=dict(
             type="CrossEntropyLoss",
             loss_weight=1.0,
-            label_smooth_eps=0.05,
         ),
         topk=(1, 2),
     ),
